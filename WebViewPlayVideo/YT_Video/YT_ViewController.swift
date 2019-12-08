@@ -8,6 +8,7 @@ class YT_ViewController: UIViewController {
     @IBOutlet var shimmerView: MyView_Shimmer!
     @IBOutlet weak var pixelView: PixelView!
     var timer: Timer?
+    var cellPlaying: YT_CollectionViewCell?
     
     
     private var chronometer: Chronometer?
@@ -35,7 +36,8 @@ class YT_ViewController: UIViewController {
         }
         
         let layout = collectionView.collectionViewLayout as! UICollectionViewFlowLayout
-        halfItemHeight = layout.itemSize.height / 2
+        halfItemHeight = layout.itemSize.height + layout.minimumLineSpacing
+        
     }
     
     
@@ -48,25 +50,16 @@ class YT_ViewController: UIViewController {
     
     private func redrawPixel(){
         timer?.invalidate()
-        timer = Timer.scheduledTimer(timeInterval: 1.0, target: self, selector: #selector(fireTimer), userInfo: nil, repeats: true)
+        timer = Timer.scheduledTimer(timeInterval: 0.5, target: self, selector: #selector(fireTimer), userInfo: nil, repeats: true)
     }
     
     private func stopRedrawPixel(){
-        print("")
-        print("")
-        print("")
-        print("")
-        
-        print("")
-        print("Stop")
         timer?.invalidate()
     }
  
     @objc func fireTimer() {
         pixelView.setNeedsDisplay()
     }
-    
-    
     
     
     private func showSoundSpectrum(){
@@ -173,18 +166,22 @@ extension YT_ViewController: UIScrollViewDelegate {
     }
     
     private func cleanupVideo() {
-        let indexPaths = collectionView.indexPathsForVisibleItems
-        for idx in indexPaths {
-            let cell = collectionView.cellForItem(at: idx) as! YT_CollectionViewCell
-            cell.backgroundColor = UIColor.blue
-            cell.stopVideo()
-            do {
-                try self.viewModel.resetRecording()
-            } catch (let err) {
-                print(err.localizedDescription)
-            }
-            view.layoutIfNeeded()
-        }
+        cellPlaying?.stopVideo()
+         do {
+                        try self.viewModel.resetRecording()
+                    } catch (let err) {
+                        //print(err.localizedDescription)
+                    }
+//        let indexPaths = collectionView.indexPathsForVisibleItems
+//        for idx in indexPaths {
+//            let cell = collectionView.cellForItem(at: idx) as! YT_CollectionViewCell
+//            cell.stopVideo()
+//            do {
+//                try self.viewModel.resetRecording()
+//            } catch (let err) {
+//                print(err.localizedDescription)
+//            }
+//        }
     }
     
     
@@ -207,6 +204,7 @@ extension YT_ViewController: UIScrollViewDelegate {
     
     private func startVideo(_ cell: YT_CollectionViewCell){
        redrawPixel()
+       cellPlaying = cell
        cell.startVideo()
        showSoundSpectrum()
        view.layoutIfNeeded()

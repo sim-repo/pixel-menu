@@ -26,12 +26,16 @@ class YT_CollectionViewCell: UICollectionViewCell {
     @IBOutlet weak var blackoutView: UIView!
     
     override func prepareForReuse() {
+        reset()
+    }
+    
+    
+    private func reset(){
         setupLayers(isPrepared: false)
         setupSpeakerButton(isShow: false)
         isMute = true
         playerState = .stopped
     }
-    
     
     private func setupLayers(isPrepared: Bool){
         if isPrepared {
@@ -82,6 +86,7 @@ class YT_CollectionViewCell: UICollectionViewCell {
         videoPlayerView.stopVideo()
         gradientView.alpha = 1.0
         playerState = .stopped
+        isMute = true
     }
     
     private func muteVideo(isMute: Bool) {
@@ -112,6 +117,7 @@ extension YT_CollectionViewCell: YTPlayerViewDelegate {
     
     func playerView(_ playerView: YTPlayerView, didChangeTo state: YTPlayerState) {
         if state == .playing {
+            muteVideo(isMute: true)
             playerState = .playing
             videoDidReadyCompletion?()
             

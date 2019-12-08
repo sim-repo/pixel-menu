@@ -139,7 +139,7 @@ extension YT_ViewController: UICollectionViewDataSource {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "YTCollectionViewCell", for: indexPath) as! YT_CollectionViewCell
         
         let model = Model.list()[indexPath.row]
-        
+        cell.delegate = self
         cell.setup(url: model.url!, videoDidReadyCompletion: videoDidReady)
         return cell
     }
@@ -150,7 +150,9 @@ extension YT_ViewController: UIScrollViewDelegate {
     
     
     func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
-        guard cleanupVideo(scrollView) else {return}
+        if canCleanup(scrollView) {
+            cleanupVideo()
+        }
     }
     
     
@@ -164,11 +166,13 @@ extension YT_ViewController: UIScrollViewDelegate {
         }
     }
     
-    private func cleanupVideo(_ scrollView: UIScrollView) -> Bool {
-        
+    private func canCleanup(_ scrollView: UIScrollView) -> Bool {
         let distance = abs(scrollView.contentOffset.y - currPos)
         guard distance > halfItemHeight else { return false}
-        
+        return true
+    }
+    
+    private func cleanupVideo() {
         let indexPaths = collectionView.indexPathsForVisibleItems
         for idx in indexPaths {
             let cell = collectionView.cellForItem(at: idx) as! YT_CollectionViewCell
@@ -181,13 +185,14 @@ extension YT_ViewController: UIScrollViewDelegate {
             }
             view.layoutIfNeeded()
         }
-        return true
     }
     
     
     private func scrollViewDidEndScrolling(_ scrollView: UIScrollView) {
         
-        guard cleanupVideo(scrollView) else {return}
+        if canCleanup(scrollView) {
+            cleanupVideo()
+        } else { return }
         
         currPos = scrollView.contentOffset.y
         
@@ -196,12 +201,25 @@ extension YT_ViewController: UIScrollViewDelegate {
         
         if let indexPath = collectionView.indexPathForItem(at: collectionViewCenterPoint) {
             let cell = collectionView.cellForItem(at: indexPath) as! YT_CollectionViewCell
-            redrawPixel()
-            cell.startVideo()
-            showSoundSpectrum()
-            
-            view.layoutIfNeeded()
+            startVideo(cell)
         }
     }
     
+    private func startVideo(_ cell: YT_CollectionViewCell){
+       redrawPixel()
+       cell.startVideo()
+       showSoundSpectrum()
+       view.layoutIfNeeded()
+    }
+    
+}
+
+
+
+extension YT_ViewController: YT_ViewControllerDelegate {
+    
+    func didPressStartVideo(cell: YT_CollectionViewCell) {
+        cleanupVideo()
+        startVideo(cell)
+    }
 }

@@ -1,13 +1,24 @@
 import UIKit
 import youtube_ios_player_helper
 
+protocol YT_ViewControllerDelegate {
+    func didPressStartVideo(cell: YT_CollectionViewCell)
+}
 
 class YT_CollectionViewCell: UICollectionViewCell {
+    
+    enum StateEnum {
+        case stopped, preparing, playing
+    }
     
     var url: URL?
     var isMute = true
     var videoId: String!
     var videoDidReadyCompletion: (()->Void)?
+    var playerState: StateEnum = .stopped
+    var delegate: YT_ViewControllerDelegate?
+    
+    
     
     @IBOutlet weak var videoPlayerView: YTPlayerView!
     @IBOutlet weak var gradientView: UIView!
@@ -18,6 +29,7 @@ class YT_CollectionViewCell: UICollectionViewCell {
         setupLayers(isPrepared: false)
         setupSpeakerButton(isShow: false)
         isMute = true
+        playerState = .stopped
     }
     
     
@@ -47,7 +59,7 @@ class YT_CollectionViewCell: UICollectionViewCell {
     
     
     
-    func setup(url: URL, videoDidReadyCompletion: (()->Void)? ) {
+    func setup(url: URL, videoDidReadyCompletion: (()->Void)?) {
         self.url = url
         gradientView.alpha = 0.0
         self.videoDidReadyCompletion = videoDidReadyCompletion
@@ -69,6 +81,7 @@ class YT_CollectionViewCell: UICollectionViewCell {
     func stopVideo(){
         videoPlayerView.stopVideo()
         gradientView.alpha = 1.0
+        playerState = .stopped
     }
     
     private func muteVideo(isMute: Bool) {
@@ -78,9 +91,14 @@ class YT_CollectionViewCell: UICollectionViewCell {
     
     
     @IBAction func mutePressButton(_ sender: Any) {
-        isMute = !isMute
-        muteVideo(isMute: isMute)
-        setupSpeakerButton(isShow: isMute)
+        if playerState == .stopped {
+            playerState = .preparing
+            delegate?.didPressStartVideo(cell: self)
+        } else if playerState == .playing {
+            isMute = !isMute
+            muteVideo(isMute: isMute)
+            setupSpeakerButton(isShow: isMute)
+        }
     }
 }
 
@@ -88,14 +106,15 @@ class YT_CollectionViewCell: UICollectionViewCell {
 extension YT_CollectionViewCell: YTPlayerViewDelegate {
     
     func playerViewDidBecomeReady(_ playerView: YTPlayerView) {
-        
+        muteVideo(isMute: true)
         setupLayers(isPrepared: true)
     }
     
     func playerView(_ playerView: YTPlayerView, didChangeTo state: YTPlayerState) {
         if state == .playing {
+            playerState = .playing
             videoDidReadyCompletion?()
-            muteVideo(isMute: isMute)
+            
             setupSpeakerButton(isShow: true)
             UIView.animate(
                 withDuration: 1.0,
@@ -105,11 +124,14 @@ extension YT_CollectionViewCell: YTPlayerViewDelegate {
             })
         }
         if state == .ended {
+            playerState = .stopped
             videoPlayerView.seek(toSeconds: 0, allowSeekAhead: true)
         }
         if state == .paused {
+            playerState = .stopped
             videoPlayerView.seek(toSeconds: 0, allowSeekAhead: true)
         }
     }
     
 }
+
